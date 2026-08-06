@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "1058829760613",
+    "project_id": "studydev-d30bf",
+    "storage_bucket": "studydev-d30bf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1058829760613:android:8669f7925cb8ca9f9c6e8c",
+        "android_client_info": {
+          "package_name": "br.edu.iftm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1058829760613-q9s5b48divlnm9a9l4m70i3i0nqlb10c.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "br.edu.iftm",
+            "certificate_hash": "c6689db7a9de2e16992c0f7e7770275c648d5d1c"
+          }
+        },
+        {
+          "client_id": "1058829760613-lllatgkeet0ij6g6e4segohpqjkhgb80.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGweGc-GLpwlW_HoY2ZMZiD-aVo3TtAzQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1058829760613-lllatgkeet0ij6g6e4segohpqjkhgb80.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

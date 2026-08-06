@@ -19,7 +19,7 @@
       "googleServicesFile": "./google-services.json",
       "package": "br.edu.iftm",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true
