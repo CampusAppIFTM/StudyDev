@@ -8,3 +8,4 @@ android/.cxx/
 *.aar
 .idea/
 .expo/
+android/
