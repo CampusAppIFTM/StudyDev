@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "306092179601",
+    "project_id": "auth-93dea",
+    "storage_bucket": "auth-93dea.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:306092179601:android:82c827c7a1f1cb2789ff30",
+        "android_client_info": {
+          "package_name": "br.edu.iftm"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "306092179601-bi1nj442mh3jh31t3h77hjgb7umkap2q.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADSdVtQOqaRjgHO-EWrSfC1X_8dan4U_o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "306092179601-bi1nj442mh3jh31t3h77hjgb7umkap2q.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
