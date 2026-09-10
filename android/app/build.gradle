@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.nicolas122bruno.StudyDevapptest'
+    namespace 'iftm.studydev'
     defaultConfig {
-        applicationId 'com.nicolas122bruno.StudyDevapptest'
+        applicationId 'iftm.studydev'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

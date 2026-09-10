@@ -1,215 +1,211 @@
-# 📱 StudyDev App
+# Login com Google + Firebase Authentication em React Native
 
-> Conectando estudantes, desenvolvedores e empresas por meio de eventos, vagas e comunidades de tecnologia.
+**Instituto Federal do Triângulo Mineiro** — Curso Superior de Computação
+Disciplina: Desenvolvimento para Dispositivos Móveis
 
-![React Native](https://img.shields.io/badge/React%20Native-Latest-61DAFB?logo=react)
-![Expo](https://img.shields.io/badge/Expo-Latest-000020?logo=expo)
-![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript)
-![License](https://img.shields.io/badge/License-MIT-green)
-
----
-
-# 📖 Sobre
-
-O **StudyDev App** é um aplicativo mobile desenvolvido em **React Native** com o objetivo de reunir eventos, vagas e informações da comunidade de tecnologia em um único lugar.
-
-O aplicativo oferece uma interface moderna e intuitiva para que estudantes e profissionais encontrem oportunidades de aprendizado, networking e crescimento na área de desenvolvimento de software.
+Exemplo comentado de autenticação social, construído a partir da análise de duas
+implementações reais. O objetivo não é apenas "fazer o login funcionar", mas
+mostrar **onde as versões ingênuas quebram** e por que a estrutura abaixo evita
+cada um desses problemas.
 
 ---
 
-# ✨ Funcionalidades
+## 1. A ideia central
 
-## 👤 Usuário
+O Google **identifica** o usuário. O Firebase **mantém a sessão** do aplicativo.
 
-- Cadastro
-- Login
-- Recuperação de senha
-- Perfil
-- Alteração de foto
-
-## 📅 Eventos
-
-- Listagem de eventos
-- Pesquisa de eventos
-- Detalhes do evento
-- Compartilhamento
-
-## 💼 Vagas
-
-- Listagem de vagas
-- Pesquisa de vagas
-- Detalhes da vaga
-- Compartilhamento
-
-## ❤️ Favoritos
-
-- Salvar eventos
-- Salvar vagas
-
-## 🔔 Notificações
-
-- Avisos importantes
-- Novos eventos
-- Novas vagas
-
-## ⚙️ Configurações
-
-- Editar perfil
-- Alterar senha
-- Sair da conta
-
----
-
-# 🛠️ Tecnologias
-
-- React Native
-- Expo
-- TypeScript
-- React Navigation
-- Expo Notifications
-- Expo Router
-- AsyncStorage (armazenamento local)
-
----
-
-# 📂 Estrutura do Projeto
-
-```text
-studydev-app/
-│
-├── src/
-│   ├── assets/
-│   ├── components/
-│   ├── screens/
-│   ├── navigation/
-│   ├── services/
-│   ├── hooks/
-│   ├── contexts/
-│   ├── utils/
-│   ├── types/
-│   └── App.tsx
-│
-├── android/
-├── ios/
-├── package.json
-├── app.json
-├── tsconfig.json
-└── README.md
+```
+┌──────────┐  1. signIn()   ┌────────────┐
+│   App    │ ─────────────► │   Google   │
+│          │ ◄───────────── │            │
+└──────────┘   2. idToken   └────────────┘
+     │
+     │ 3. GoogleAuthProvider.credential(idToken)
+     │ 4. signInWithCredential(auth, credencial)
+     ▼
+┌──────────────────┐
+│ Firebase Auth    │  ──► uid estável, token verificável no servidor,
+│ (sessão do app)  │      regras do Firestore/Storage, sessão persistente
+└──────────────────┘
 ```
 
+Um app que faz apenas o passo 1 e 2 e guarda o perfil em `useState` tem um
+*login social*, não uma *autenticação*. Não existe nada que um servidor possa
+verificar, e a sessão morre ao fechar o aplicativo.
+
 ---
 
-# 🚀 Como executar
+## 2. Estrutura dos arquivos
 
-### Clone o projeto
+```
+App.js                          decide qual tela mostrar (três estados)
+firebaseConfig.js               inicializa o Firebase com persistência
+.env.example                    modelo das variáveis de ambiente
+src/
+  services/
+    autenticacao.js             todo o contato com Google e Firebase
+  screens/
+    CarregandoScreen.js         enquanto a sessão é verificada
+    LoginScreen.js              botão oficial + carregando + erro
+    HomeScreen.js               dados do usuário + sair
+```
+
+A regra de organização é simples: **as telas não conhecem o Firebase**. Elas
+chamam funções do serviço. Se a identidade migrar para um backend próprio,
+apenas `src/services/autenticacao.js` muda.
+
+---
+
+## 3. Configuração passo a passo
+
+### 3.1 Criar o projeto
 
 ```bash
-git clone https://github.com/SEU-USUARIO/studydev-app.git
+npx create-expo-app exemplo-login-google --template blank
+cd exemplo-login-google
+npx expo install firebase @react-native-async-storage/async-storage
+npx expo install @react-native-google-signin/google-signin
 ```
 
-### Entre na pasta
+### 3.2 Firebase Console
+
+1. Criar um projeto em <https://console.firebase.google.com>.
+2. **Authentication → Sign-in method → Google → Ativar.**
+3. Adicionar um app Android. O *nome do pacote* deve ser exatamente o
+   `android.package` do `app.json` (ex.: `br.edu.iftm.exemplologin`).
+4. Informar a **impressão digital SHA-1** (obrigatória, senão o login falha com
+   `DEVELOPER_ERROR`):
 
 ```bash
-cd studydev-app
+# chave de depuração
+keytool -list -v -keystore ~/.android/debug.keystore \
+        -alias androiddebugkey -storepass android -keypass android
 ```
 
-### Instale as dependências
+5. Baixar o `google-services.json` e colocá-lo na raiz do projeto.
 
-```bash
-npm install
+### 3.3 Obter o `webClientId`
+
+Abrir o `google-services.json` e procurar, dentro de `oauth_client`, a entrada
+com `"client_type": 3`. O valor de `client_id` é o **webClientId**.
+
+> Erro clássico: usar o client ID do tipo 1 (Android). O login até acontece,
+> mas `idToken` volta `undefined` e o Firebase nunca recebe a credencial.
+
+### 3.4 `app.json`
+
+```json
+{
+  "expo": {
+    "android": {
+      "package": "br.edu.iftm.exemplologin",
+      "googleServicesFile": "./google-services.json"
+    },
+    "plugins": ["@react-native-google-signin/google-signin"]
+  }
+}
 ```
 
-ou
+### 3.5 Variáveis de ambiente
 
 ```bash
-yarn
+cp .env.example .env      # e preencha com os valores do console
+echo ".env" >> .gitignore
+echo "google-services.json" >> .gitignore
 ```
 
-### Execute o projeto
+### 3.6 Gerar o *development build*
+
+**Este exemplo não roda no Expo Go.** A biblioteca do Google Sign-In possui
+código nativo, e o Expo Go só embarca os módulos nativos que já vêm com ele.
 
 ```bash
-npx expo start
+npx expo prebuild
+npx expo run:android
 ```
 
 ---
 
-# 📱 Telas
+## 4. Os cinco pontos de discussão em aula
 
-- Splash Screen
-- Login
-- Cadastro
-- Página Inicial
-- Eventos
-- Detalhes do Evento
-- Vagas
-- Detalhes da Vaga
-- Favoritos
-- Perfil
-- Configurações
+### 4.1 Cancelar o login não lança exceção (versão 13+)
 
----
+A partir da versão 13 da biblioteca, desistir do login faz `signIn()` **resolver**
+com `{ type: "cancelled", data: null }` em vez de lançar erro.
 
-# 🎯 Objetivo
+```js
+// ERRADO — o objeto é "truthy" e passa no if
+const usuario = await GoogleSignin.signIn();
+if (usuario) mostrarHome(usuario);       // entra aqui mesmo ao cancelar!
+// ...e depois estoura em usuario.data.user.photo
 
-O StudyDev foi criado para facilitar o acesso a oportunidades na área de tecnologia, reunindo eventos, vagas e informações relevantes em um único aplicativo, proporcionando uma experiência simples, rápida e organizada.
-
----
-
-# 📌 Roadmap
-
-## Versão 1.0
-
-- ✅ Login
-- ✅ Cadastro
-- ✅ Perfil
-- ✅ Eventos
-- ✅ Vagas
-- ✅ Favoritos
-
-## Próximas versões
-
-- Melhorias na pesquisa
-- Novas categorias
-- Compartilhamento de conteúdo
-- Melhorias de desempenho
-- Mais opções de personalização
-
----
-
-# 🤝 Contribuindo
-
-1. Faça um Fork do projeto.
-2. Crie uma branch:
-
-```bash
-git checkout -b feature/minha-feature
+// CERTO
+const resposta = await GoogleSignin.signIn();
+if (resposta.type === "cancelled") return;
+const idToken = resposta.data?.idToken;
 ```
 
-3. Faça suas alterações.
-4. Commit:
+Bom gancho para discutir **contrato de retorno de biblioteca** e por que ler o
+CHANGELOG faz parte do trabalho.
 
-```bash
-git commit -m "feat: adiciona nova funcionalidade"
+### 4.2 O estado do usuário não deve ser propagado "na mão"
+
+Passar `setUser` como prop para a tela de login funciona — até o app ser
+reaberto. O `onAuthStateChanged` resolve login, logout e restauração de sessão
+com um único mecanismo:
+
+```js
+useEffect(() => {
+  configurarGoogleSignin();
+  return observarUsuario(setUsuario);   // o retorno cancela o listener
+}, []);
 ```
 
-5. Envie para seu repositório:
+### 4.3 Três estados, não dois
 
-```bash
-git push origin feature/minha-feature
+`usuario === null` significa "não há usuário" **e também** "ainda não verifiquei".
+Sem a flag `verificando`, a tela de login pisca a cada abertura.
+
+### 4.4 O `finally` que salva o indicador de carregamento
+
+```js
+setCarregando(true);
+try { await entrarComGoogle(); }
+catch (e) { setErro(descreverErro(e)); }
+finally { setCarregando(false); }   // sempre executa
 ```
 
-6. Abra um Pull Request.
+Sem o `finally`, um erro deixa o `ActivityIndicator` girando para sempre.
+
+### 4.5 Logout é duplo
+
+`GoogleSignin.signOut()` esquece a conta escolhida no aparelho;
+`signOut(auth)` derruba a sessão do Firebase. Fazer só um dos dois produz bugs
+diferentes e igualmente confusos.
 
 ---
 
-# 📄 Licença
+## 5. Erros mais comuns
 
-Este projeto está licenciado sob a licença **MIT**.
+| Sintoma | Causa provável |
+|---|---|
+| `DEVELOPER_ERROR` | SHA-1 não cadastrado ou nome do pacote divergente |
+| `idToken` vem `undefined` | `webClientId` ausente ou do tipo errado (use o `client_type: 3`) |
+| App volta deslogado após reabrir | `getAuth()` no lugar de `initializeAuth` com `AsyncStorage` |
+| Login entra sempre na mesma conta | faltou `GoogleSignin.signOut()` no logout |
+| `PLAY_SERVICES_NOT_AVAILABLE` | emulador sem Google Play |
+| Erro de módulo nativo ao abrir | rodando no Expo Go em vez de *development build* |
 
 ---
 
-# 👨‍💻 Desenvolvido por
+## 6. Exercícios propostos
 
-**StudyDev**
-
-**Aprenda, compartilhe e evolua na tecnologia.** 🚀
+1. Exibir a data do último acesso usando `usuario.metadata.lastSignInTime`.
+2. Bloquear o acesso a contas fora do domínio `@iftm.edu.br`, encerrando a
+   sessão e avisando o usuário quando o e-mail não corresponder.
+3. Gravar, no Firestore, um documento na coleção `usuarios` com o `uid` como
+   identificador, criado no primeiro login e atualizado nos seguintes.
+4. Acrescentar o login anônimo (`signInAnonymously`) e, depois, vincular a conta
+   Google à sessão anônima com `linkWithCredential`, preservando os dados.
+5. Extrair a lógica de sessão para um *hook* `useAutenticacao()` que devolva
+   `{ usuario, verificando, entrar, sair, erro }`, e simplificar `App.js`.
