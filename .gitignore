@@ -1,9 +1,9 @@
 node_modules/
 .gradle/
 /build/
-android/app/build/
-android/.gradle/
-android/.cxx/
+android/
+android/
+android/
 *.apk
 *.aar
 .idea/
