@@ -1,53 +1,40 @@
-/**
- * App.js
- * ---------------------------------------------------------------------------
- * Componente raiz. Responsabilidade única: decidir QUAL tela mostrar.
- *
- * São três estados possíveis, e não dois:
- *   verificando === true   -> ainda não sabemos se há sessão  -> CarregandoScreen
- *   usuario !== null       -> há usuário autenticado          -> HomeScreen
- *   usuario === null       -> não há usuário                  -> LoginScreen
- *
- * Confundir "ainda não sei" com "não há usuário" é o erro que faz o app piscar
- * a tela de login a cada abertura.
- * ---------------------------------------------------------------------------
- */
-import { useEffect, useState } from "react";
+import React from "react";
 import { StatusBar } from "expo-status-bar";
 import { View, StyleSheet } from "react-native";
+import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 
-import { configurarGoogleSignin, observarUsuario } from "./src/services/autenticacao";
+import { useAutenticacao } from "./src/hooks/useAutenticacao";
 import CarregandoScreen from "./src/screens/CarregandoScreen";
 import LoginScreen from "./src/screens/LoginScreen";
-import HomeScreen from "./src/screens/HomeScreen";
+import AppNavigator from "./src/navigation/AppNavigator";
+
+const DarkTheme = {
+  ...DefaultTheme,
+  dark: true,
+  colors: {
+    ...DefaultTheme.colors,
+    background: "#0d1117",
+    card: "#161b22",
+    text: "#e6edf3",
+    border: "#21262d",
+    primary: "#58a6ff",
+  },
+};
 
 const App = () => {
-  const [usuario, setUsuario] = useState(null);
-  const [verificando, setVerificando] = useState(true);
-
-  useEffect(() => {
-    configurarGoogleSignin();
-
-    // observarUsuario devolve a função de cancelamento. Ao retorná-la no
-    // useEffect, o React a executa quando o componente é desmontado, evitando
-    // que o listener continue vivo (vazamento de memória).
-    const cancelarObservacao = observarUsuario((usuarioAtual) => {
-      setUsuario(usuarioAtual);
-      setVerificando(false);
-    });
-
-    return cancelarObservacao;
-  }, []); // array vazio: executa uma única vez, na montagem
+  const { usuario, verificando, entrar, erro } = useAutenticacao();
 
   return (
     <View style={styles.container}>
-      <StatusBar style="auto" />
+      <StatusBar style="light" />
       {verificando ? (
         <CarregandoScreen />
-      ) : usuario ? (
-        <HomeScreen usuario={usuario} />
+      ) : usuario && !usuario.isAnonymous ? (
+        <NavigationContainer theme={DarkTheme}>
+          <AppNavigator usuario={usuario} />
+        </NavigationContainer>
       ) : (
-        <LoginScreen />
+        <LoginScreen entrar={entrar} erro={erro} />
       )}
     </View>
   );
@@ -58,5 +45,6 @@ export default App;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: "#0d1117",
   },
 });

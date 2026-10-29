@@ -1,102 +1,223 @@
 /**
  * src/screens/LoginScreen.js
  * ---------------------------------------------------------------------------
- * Tela de login.
+ * Tela de login do StudyDev.
  *
- * Observe o que ela NÃO faz:
- *   - não conhece o Firebase;
- *   - não recebe uma prop para "avisar" quem entrou.
- * Ela apenas dispara o login e cuida do próprio estado visual (carregando e
- * mensagem de erro). Quando o login dá certo, o observador em App.js troca a
- * tela sozinho.
+ * NÃO instancia useAutenticacao() — recebe `entrar` e `erro` via props
+ * do App.js para evitar múltiplos listeners de onAuthStateChanged.
  * ---------------------------------------------------------------------------
  */
-import { useState } from "react";
-import { View, Text, ActivityIndicator, StyleSheet } from "react-native";
-import { GoogleSigninButton } from "@react-native-google-signin/google-signin";
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  SafeAreaView,
+  ScrollView,
+  Dimensions,
+  Image,
+} from "react-native";
 
-import { entrarComGoogle, descreverErro } from "../services/autenticacao";
+const { width } = Dimensions.get("window");
 
-const LoginScreen = () => {
+const LoginScreen = ({ entrar, erro }) => {
   const [carregando, setCarregando] = useState(false);
-  const [erro, setErro] = useState(null);
 
-  const aoPressionar = async () => {
-    setErro(null);
+  const aoPressionar = useCallback(async () => {
+    if (carregando) return;
     setCarregando(true);
-
     try {
-      await entrarComGoogle();
-      // Se deu certo, não fazemos nada aqui: o onAuthStateChanged assume.
-      // Se o usuário cancelou, também não fazemos nada -- ele continua na tela.
-    } catch (e) {
-      console.log("Falha no login:", e);
-      setErro(descreverErro(e));
+      await entrar();
     } finally {
-      // O finally garante que o indicador SEMPRE é desligado, tenha o login
-      // dado certo, falhado ou sido cancelado. Esquecer isto é o motivo mais
-      // comum de um botão que "trava" carregando para sempre.
       setCarregando(false);
     }
-  };
+  }, [carregando, entrar]);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.titulo}>Minha Agenda</Text>
-      <Text style={styles.subtitulo}>Entre para continuar</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        bounces={false}
+      >
+        <View style={styles.topGlow} />
 
-      {/*
-        GoogleSigninButton é o botão oficial. Além de pronto, ele atende às
-        diretrizes de marca do Google, exigidas para publicar na loja.
-        O disabled evita o erro IN_PROGRESS por toque duplo.
-      */}
-      <GoogleSigninButton
-        style={styles.botaoGoogle}
-        size={GoogleSigninButton.Size.Wide}
-        color={GoogleSigninButton.Color.Dark}
-        onPress={aoPressionar}
-        disabled={carregando}
-      />
+        <View style={styles.logoContainer}>
+          <Image
+            source={require("../../assets/logo.png")}
+            style={styles.logoImage}
+            resizeMode="contain"
+          />
+        </View>
 
-      {/* Área reservada com altura fixa: evita a tela "pular" ao aparecer. */}
-      <View style={styles.areaAviso}>
-        {carregando && <ActivityIndicator />}
-        {erro && <Text style={styles.erro}>{erro}</Text>}
-      </View>
-    </View>
+        <View style={styles.textContainer}>
+          <Text style={styles.titulo}>
+            Aprenda programação{"\n"}de forma organizada
+          </Text>
+          <Text style={styles.subtitulo}>
+            Conteúdos e trilhas feitos por estudantes pra te ajudar a evoluir na prática.
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.botaoGoogle, carregando && styles.botaoDesabilitado]}
+          onPress={aoPressionar}
+          disabled={carregando}
+          activeOpacity={0.85}
+          accessibilityLabel={
+            carregando ? "Entrando na sua conta" : "Entrar com Google"
+          }
+          accessibilityRole="button"
+          accessibilityState={{ disabled: carregando }}
+        >
+          {carregando ? (
+            <View style={styles.botaoConteudo}>
+              <ActivityIndicator color="#ffffff" size="small" />
+              <Text style={styles.botaoTexto}>Entrando...</Text>
+            </View>
+          ) : (
+            <View style={styles.botaoConteudo}>
+              <Text style={styles.googleG}>G</Text>
+              <Text style={styles.botaoTexto}>Entrar com Google</Text>
+            </View>
+          )}
+        </TouchableOpacity>
+
+        <Text style={styles.avisoInstituicao}>
+          Você precisa de uma conta @iftm.edu.br pra entrar
+        </Text>
+
+        {erro ? (
+          <View style={styles.erroContainer}>
+            <Text style={styles.erroTexto}>{erro}</Text>
+          </View>
+        ) : null}
+
+        <View style={styles.rodape}>
+          <Text style={styles.rodapeTexto}>
+            Feito por estudantes do IFTM
+          </Text>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 export default LoginScreen;
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
+    backgroundColor: "#0d1117",
+  },
+  scrollContent: {
+    flexGrow: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
-    padding: 24,
+    paddingHorizontal: 32,
+    paddingVertical: 48,
   },
-  titulo: {
-    fontSize: 32,
-    fontWeight: "bold",
-    marginBottom: 8,
+  topGlow: {
+    position: "absolute",
+    top: -120,
+    width: 280,
+    height: 280,
+    borderRadius: 140,
+    backgroundColor: "rgba(139, 92, 246, 0.08)",
+    alignSelf: "center",
   },
-  subtitulo: {
-    fontSize: 16,
-    color: "#666",
+  logoContainer: {
+    alignItems: "center",
     marginBottom: 32,
   },
+  logoImage: {
+    width: 200,
+    height: 200,
+  },
+  textContainer: {
+    alignItems: "center",
+    marginBottom: 44,
+    maxWidth: 320,
+  },
+  titulo: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#e6edf3",
+    textAlign: "center",
+    lineHeight: 32,
+    marginBottom: 14,
+  },
+  subtitulo: {
+    fontSize: 15,
+    color: "#8b949e",
+    textAlign: "center",
+    lineHeight: 22,
+  },
   botaoGoogle: {
-    width: 240,
-    height: 48,
-  },
-  areaAviso: {
-    height: 48,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
+    backgroundColor: "#58a6ff",
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    width: Math.min(width - 64, 340),
   },
-  erro: {
-    color: "#c62828",
+  botaoDesabilitado: {
+    opacity: 0.5,
+  },
+  botaoConteudo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  googleG: {
+    fontSize: 20,
+    fontWeight: "bold",
+    color: "#ffffff",
+    width: 28,
+    height: 28,
+    textAlign: "center",
+    lineHeight: 28,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  botaoTexto: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#ffffff",
+  },
+  avisoInstituicao: {
+    marginTop: 20,
+    fontSize: 13,
+    color: "#484f58",
+    textAlign: "center",
+  },
+  erroContainer: {
+    marginTop: 20,
+    backgroundColor: "rgba(248, 81, 73, 0.1)",
+    borderWidth: 1,
+    borderColor: "rgba(248, 81, 73, 0.25)",
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    maxWidth: 320,
+  },
+  erroTexto: {
+    color: "#f85149",
+    fontSize: 14,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  rodape: {
+    marginTop: 48,
+  },
+  rodapeTexto: {
+    fontSize: 12,
+    color: "#484f58",
     textAlign: "center",
   },
 });
