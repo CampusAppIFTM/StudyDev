@@ -1,0 +1,26 @@
+STUDYDEV — MIGRAÇÃO DE VAGAS E EVENTOS PARA O FIRESTORE
+
+CONTEÚDO
+- migrateVagasEventos.mjs: script que envia os dados para o Firestore.
+- vagas.js: dados de vagas fornecidos.
+- eventos.js: dados de eventos fornecidos.
+
+ANTES DE EXECUTAR
+1. Tenha o Node.js e o Google Cloud CLI (gcloud) instalados.
+2. Abra o terminal nesta pasta.
+3. Instale o SDK Admin do Firebase:
+   npm install firebase-admin
+4. Faça a autenticação local:
+   gcloud auth application-default login
+
+EXECUTAR NO POWERSHELL
+$env:FIREBASE_PROJECT_ID="studydeviftm"
+node .\migrateVagasEventos.mjs
+
+O script espera encontrar vagas.js e eventos.js na mesma pasta. Ele valida os IDs antes de gravar e escreve nas coleções "vagas" e "eventos", usando o ID de cada item como ID do documento. Usa merge:true e não apaga documentos que não estejam nos arquivos locais.
+
+IMPORTANTE
+- O script usa credenciais administrativas locais. Nunca coloque uma chave JSON de conta de serviço dentro do ZIP, no GitHub ou no aplicativo.
+- Os dados fornecidos incluem links example.com e datas de 2024. São dados de exemplo/desatualizados; revise-os antes de apresentá-los como oportunidades ou eventos reais.
+- Este pacote migra os dados para o Firestore, mas não modifica as telas do app para ler do banco.
+- Depois de executar, confira as coleções no Firebase Console.

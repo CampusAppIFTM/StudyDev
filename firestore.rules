@@ -1,0 +1,70 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: verifica se é o próprio usuário
+    function isOwner(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    // Helper: verifica se é admin (via custom claim ou campo role no doc do usuário)
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.role == 'ADMIN' ||
+        get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.role == 'ADMIN'
+      );
+    }
+
+    // Helper: valida domínio institucional IFTM
+    function isIFTMEmail() {
+      return request.auth != null && (
+        request.auth.token.email.matches('.*@iftm\\.edu\\.br') ||
+        request.auth.token.email.matches('.*@estudante\\.iftm\\.edu\\.br')
+      );
+    }
+
+    // Usuários: cada usuário só pode ler/escrever seu próprio documento
+    // Progresso fica em subcoleção usuarios/{uid}/progresso/{trackId}
+    match /usuarios/{uid} {
+      allow read: if isOwner(uid) || isAdmin();
+      allow create: if isOwner(uid) && isIFTMEmail();
+      allow update: if isOwner(uid) && isIFTMEmail();
+      // Não permitir delete por cliente comum, apenas admin
+      allow delete: if isAdmin();
+
+      match /progresso/{trackId} {
+        allow read, write: if isOwner(uid) || isAdmin();
+      }
+    }
+
+    // Conteúdo público (trilhas, cursos, aulas) - mantido localmente em studyDevData
+    // Se migrar para Firestore, usar:
+    match /trilhas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /cursos/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /aulas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Eventos e vagas - leitura pública, escrita admin
+    match /eventos/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    match /vagas/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Negar tudo o resto por padrão
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
